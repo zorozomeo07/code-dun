@@ -1,0 +1,69 @@
+name: note
+description: "Note Kimer"
+publish_to: 'none'
+version: 1.0.2
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  alarm: ^3.1.4
+  basic_utils: ^5.7.0
+  dotted_border: ^2.1.0
+  flextras: ^1.0.0
+  flutter:
+    sdk: flutter
+  flutter_alarm_clock: ^0.1.1
+  flutter_cache_manager: ^3.3.2
+  # flutter_local_notifications: ^17.0.0
+  flutter_staggered_grid_view: ^0.7.0
+  flutter_wallpaper_manager: ^0.0.4
+  image_picker: ^1.1.1
+  intl: ^0.19.0
+  link_text: ^0.2.1
+  path: ^1.9.0
+  permission_handler: ^11.3.1
+  provider: ^6.1.2
+  sqflite: ^2.3.3+1
+  transparent_pointer: ^1.0.1
+  share_plus: ^9.0.0
+  url_launcher: ^6.3.0
+  http: ^1.2.1
+  connectivity: ^3.0.6
+  loading_animation_widget: ^1.2.1
+  safe_device: ^1.1.7
+  cached_network_image: ^3.2.3
+ 
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - images/background.jpg
+    - images/image2.jpeg
+    - images/vuot_xoa.jpg
+    - assets/sound_1.mp3
+    - assets/sound_2.mp3
+    - assets/sound_3.mp3
+    - assets/sound_4.mp3
+    - assets/sound_5.mp3
+    - assets/sound_6.mp3
+    - assets/sound_7.mp3
+    - images/bg.jpg
+    - images/login.jpg
+    - images/register.jpg
+    - images/next.png
+    - images/webbutton.jpg
+    - images/banner.jpg
+  fonts:
+    - family: fonts
+      fonts:
+        - asset: font/font_text.ttf
+    - family: skin
+      fonts:
+        - asset: font/scin.ttf
+      
