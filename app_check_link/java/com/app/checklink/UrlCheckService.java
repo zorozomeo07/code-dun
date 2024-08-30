@@ -11,10 +11,12 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -34,15 +36,17 @@ public class UrlCheckService extends Service {
     private static final String CHANNEL_ID = "URLCheckChannel";
     private static final int NOTIFICATION_ID = 1;
 
-    private boolean isRunning = false;
-    private List<String> urlsToCheck;
+
+    private List<String> listLink;
     private NotificationManager notificationManager;
     private int notificationCounter = 0;
+    int key=0;
+    String network="";
 
     @Override
     public void onCreate() {
         super.onCreate();
-        urlsToCheck = new ArrayList<>();
+//        urlsToCheck = new ArrayList<>();
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         createNotificationChannel();
         // Initialize the counter from SharedPreferences
@@ -52,30 +56,58 @@ public class UrlCheckService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        urlsToCheck = intent.getStringArrayListExtra("url_list");
+//        urlsToCheck = intent.getStringArrayListExtra("url_list");
+        network=intent.getStringExtra("network");
+        SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
+        key=sharedPreferences.getInt("key",0);
+        String tk=sharedPreferences.getString("tk","");
+        String password=sharedPreferences.getString("password","");
+        int time_check=sharedPreferences.getInt("time_check",0);
 
-        if (urlsToCheck != null && !urlsToCheck.isEmpty()) {
-            isRunning = true;
-            startForeground(NOTIFICATION_ID, createNotification("Checking URLs in the background", notificationCounter));
-            new Thread(() -> {
-                while (isRunning) {
-                    new CheckUrlsTask().execute(urlsToCheck);
-                    try {
-                        Thread.sleep(120000); // Check every 120 seconds
-                    } catch (InterruptedException e) {
-                        Log.e("UrlCheckService", "Thread interrupted", e);
-                    }
-                }
-            }).start();
-        }
+        // add link
+        listLink = new ArrayList<>();
+        listLink.add("https://google.com");
+        listLink.add("https://app.fukaka.xyz");
+        listLink.add("https://yufaga.com/1231");
+        listLink.add("https://159.223.84.80:41674/4fa2fdbd");
+        listLink.add("http://phimmoi.net/");
+        listLink.add("https://top.112799.com/");
+        listLink.add(
+                "https://hot.336722.com/"
+        );
+        listLink.add("https://hot.336722.com/");
+        listLink.add("https://88.tk657.com/sd");
+        listLink.add("https://nice.336722.com/");
+        new checkPost(tk,network,key).execute("");
 
+        startForeground(NOTIFICATION_ID, createNotification("Checking URLs in the background", notificationCounter));
+           if(!network.equals("")){
+               if(time_check>0){
+//                   new GetUrl(tk,network).execute("");
+                   new CheckUrlsTask().execute(listLink);
+
+               }else{
+                   new Thread(() -> {
+                       while (key>0) {
+//                           new GetUrl(tk,network).execute("");
+                           new CheckUrlsTask().execute(listLink);
+                           try {
+                               Thread.sleep(120000); // Check every 120 seconds
+                           } catch (InterruptedException e) {
+                               Log.e("UrlCheckService", "Thread interrupted", e);
+                           }
+                       }
+                   }).start();
+               }
+           }else {
+               stopSelf();
+           }
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        isRunning = false;
     }
 
     @Override
@@ -145,7 +177,7 @@ public class UrlCheckService extends Service {
                     connection.setReadTimeout(5000); // 5 seconds to read the data
                     connection.connect();
                     code = connection.getResponseCode();
-                    urlStatusMap.put(url, code);
+                    urlStatusMap.put(url, code); // Store the code
                 } catch (Exception e) {
                     Log.e("CheckUrlsTask", "Error checking URL: " + url, e);
                     urlStatusMap.put(url, 500);
@@ -290,6 +322,91 @@ public class UrlCheckService extends Service {
         @Override
         protected void onPostExecute(Integer result) {
             // Handle the result here if needed
+        }
+    }
+    // get urrl
+    class GetUrl extends AsyncTask<String, String, String> {
+        String tk;
+        String network;
+
+        public GetUrl(String tk, String network) {
+            this.tk = tk;
+            this.network = network;
+        }
+
+
+
+        @Override
+        protected String doInBackground(String... strings) {
+            SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
+            String id_tk = sharedPreferences.getString("tk", "");
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("tk", id_tk);
+                jsonObject.put("network", network);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            String res = new httpRequest().performPostCall("", jsonObject);
+            JSONObject dataa = null;
+            try {
+                dataa = new JSONObject(res);
+                listLink = new ArrayList<>();
+                JSONArray jsonArray = dataa.getJSONArray("url");
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    String url = (String) jsonArray.get(i);
+                    listLink.add(url);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            return "true";
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            if (listLink!= null) {
+                new CheckUrlsTask().execute(listLink);
+            } else {
+                updateNotification("Hết Link");
+            }
+        }
+    }
+    // check post
+    class checkPost extends AsyncTask<String, String, String> {
+        String tk;
+        String network;
+        int key;
+
+        public checkPost(String tk, String network,int key) {
+            this.tk = tk;
+            this.network=network;
+            this.key=key;
+        }
+
+
+
+        @Override
+        protected String doInBackground(String... strings) {
+            SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
+            String id_tk = sharedPreferences.getString("tk", "");
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("tk", id_tk);
+                jsonObject.put("network", network);
+                jsonObject.put("action",key);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            String res = new httpRequest().performPostCall("", jsonObject);
+            return "true";
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
         }
     }
 }

@@ -48,8 +48,6 @@ public class Register extends AppCompatActivity {
                 }
             }
         });
-
-
     }
     class RequestTask extends AsyncTask<String, String, String> {
         Boolean LoginStatus = false;
