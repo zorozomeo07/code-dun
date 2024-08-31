@@ -42,6 +42,8 @@ public class UrlCheckService extends Service {
     private int notificationCounter = 0;
     int key=0;
     String network="";
+    private Thread checkUrlsThread;
+    private boolean isRunning = false;
 
     @Override
     public void onCreate() {
@@ -63,6 +65,7 @@ public class UrlCheckService extends Service {
         String tk=sharedPreferences.getString("tk","");
         String password=sharedPreferences.getString("password","");
         int time_check=sharedPreferences.getInt("time_check",0);
+        Log.d("abcdcd",network);
 
         // add link
         listLink = new ArrayList<>();
@@ -72,42 +75,41 @@ public class UrlCheckService extends Service {
         listLink.add("https://159.223.84.80:41674/4fa2fdbd");
         listLink.add("http://phimmoi.net/");
         listLink.add("https://top.112799.com/");
-        listLink.add(
-                "https://hot.336722.com/"
-        );
-        listLink.add("https://hot.336722.com/");
-        listLink.add("https://88.tk657.com/sd");
-        listLink.add("https://nice.336722.com/");
         new checkPost(tk,network,key).execute("");
 
         startForeground(NOTIFICATION_ID, createNotification("Checking URLs in the background", notificationCounter));
-           if(!network.equals("")){
-               if(time_check>0){
-//                   new GetUrl(tk,network).execute("");
-                   new CheckUrlsTask().execute(listLink);
+        if (!network.equals("")) {
+            isRunning = true; // Set the flag to indicate the service is running
+            if (time_check > 0) {
+                new CheckUrlsTask().execute(listLink);
+            } else {
+                checkUrlsThread = new Thread(() -> {
+                    while (key > 0 && isRunning) { // Check if the service is still running
+                        new CheckUrlsTask().execute(listLink);
+                        try {
+                            Thread.sleep(60000); // Check every 60 seconds
+                        } catch (InterruptedException e) {
+                            Log.e("UrlCheckService", "Thread interrupted", e);
+                        }
+                    }
+                });
+                checkUrlsThread.start();
+            }
+        }
 
-               }else{
-                   new Thread(() -> {
-                       while (key>0) {
-//                           new GetUrl(tk,network).execute("");
-                           new CheckUrlsTask().execute(listLink);
-                           try {
-                               Thread.sleep(120000); // Check every 120 seconds
-                           } catch (InterruptedException e) {
-                               Log.e("UrlCheckService", "Thread interrupted", e);
-                           }
-                       }
-                   }).start();
-               }
-           }else {
-               stopSelf();
-           }
+
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        network = "";
+        isRunning = false; // Stop the loop in the thread
+        if (checkUrlsThread != null && checkUrlsThread.isAlive()) {
+            checkUrlsThread.interrupt(); // Interrupt the thread if it’s running
+        }
+        Toast.makeText(this, "Service stopped", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -159,7 +161,7 @@ public class UrlCheckService extends Service {
         notificationManager.notify(NOTIFICATION_ID, notification);
     }
 
-
+    // check statuss link
     class CheckUrlsTask extends AsyncTask<List<String>, Void, Map<String, Integer>> {
 
 
@@ -295,6 +297,7 @@ public class UrlCheckService extends Service {
         private String url;
         private Integer statusCode;
 
+
         public Update(String id, String url, Integer statusCode) {
             this.id = id;
             this.url = url;
@@ -368,6 +371,7 @@ public class UrlCheckService extends Service {
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
             if (listLink!= null) {
+                Log.d("AAvbcb",listLink.size()+"");
                 new CheckUrlsTask().execute(listLink);
             } else {
                 updateNotification("Hết Link");
@@ -409,4 +413,7 @@ public class UrlCheckService extends Service {
             super.onPostExecute(s);
         }
     }
+
+    // trang thai
+
 }

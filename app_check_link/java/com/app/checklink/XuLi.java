@@ -49,10 +49,11 @@ public class XuLi extends AppCompatActivity {
     int key = 0;
     Spinner spinner;
     LinearLayout lin_network;
-    List<String> listLink;
+    List<String> listNetWork =new ArrayList<>();
     SharedPreferences sharedPreferences;
     SharedPreferences.Editor editor;
     private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1001;
+    String networktype="";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,18 +83,13 @@ public class XuLi extends AppCompatActivity {
         }else {
             lin_network.setVisibility(View.VISIBLE);
         }
-//        else {
-//            txt_check_link.setVisibility(View.GONE);
-//            txt_stop.setVisibility(View.GONE);
-//            txt_stuss.setVisibility(View.GONE);
-//            txt_network.setVisibility(View.VISIBLE);
-//            txt_chon.setVisibility(View.VISIBLE);
-//        }
+
         // du lieu
         editor = sharedPreferences.edit();
         tk = sharedPreferences.getString("tk", "admin123");
         tai_khoan.setText("Tk : " + tk);
         txt_network.setText("Network : ......");
+        networktype=NetworkUtil.getNetworkType(XuLi.this);
 
 
         spinner = (Spinner) findViewById(R.id.spinner);
@@ -104,17 +100,7 @@ public class XuLi extends AppCompatActivity {
         categories.add("FPT");
         categories.add("Mobifone");
         categories.add("Vietnamobile");
-
-
-        // Creating adapter for spinner
-        ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, categories);
-
-        // Drop down layout style - list view with radio button
-        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-        // attaching data adapter to spinner
-        spinner.setAdapter(dataAdapter);
-        // Set a listener to respond when an item is selected
+        new GetNetWork(tk).execute();
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -136,6 +122,10 @@ public class XuLi extends AppCompatActivity {
                 lin_network.setVisibility(View.GONE);
                 txt_chon.setVisibility(View.GONE);
                 txt_check_link.setVisibility(View.VISIBLE);
+                network=network +" - "+networktype;
+                Log.d("abcdc",network);
+//                Toast.makeText(XuLi.this,""+network,Toast.LENGTH_SHORT).show();
+
 
             }
         });
@@ -183,20 +173,17 @@ public class XuLi extends AppCompatActivity {
         txt_check_link.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                txt_check_link.setVisibility(View.GONE);
-//                txt_stop.setVisibility(View.VISIBLE);
-//                Intent serviceIntent = new Intent(XuLi.this, UrlCheckService.class);
-//                //serviceIntent.putStringArrayListExtra("url_list", (ArrayList<String>) listLink);
-//                serviceIntent.putExtra("network",network);
-//                startService(serviceIntent);
+                txt_check_link.setVisibility(View.GONE);
+                txt_stop.setVisibility(View.VISIBLE);
+                Intent serviceIntent = new Intent(XuLi.this, UrlCheckService.class);
+                serviceIntent.putExtra("network",network);
+                startService(serviceIntent);
                 txt_stuss.setVisibility(View.VISIBLE);
-//                // push key
-//                editor.putInt("key", 1);
-//                editor.commit();
-
-
-                NetworkUtil.updateNetworkTypeText(XuLi.this,txt_stuss);
-
+                // push key
+                editor.putInt("key", 1);
+                editor.commit();
+//               networktype=NetworkUtil.getNetworkType(XuLi.this);
+//                Log.d("abcdc",networktype);
 
             }
         });
@@ -212,6 +199,8 @@ public class XuLi extends AppCompatActivity {
                 txt_stuss.setVisibility(View.GONE);
                 editor.putInt("key", 0);
                 editor.commit();
+
+               // Toast.makeText(XuLi.this,"Dừng check link thành công !",Toast.LENGTH_SHORT).show();
 
             }
         });
@@ -230,59 +219,66 @@ public class XuLi extends AppCompatActivity {
     }
 
     // xử lí lấy link
-    class GetUrl extends AsyncTask<String, String, String> {
+    class GetNetWork extends AsyncTask<String, Void, List<String>> {
         String tk;
-        String network;
+        List<String> listNetWork;
 
-        public GetUrl(String tk, String network) {
+        public GetNetWork(String tk) {
             this.tk = tk;
-            this.network = network;
+            this.listNetWork = new ArrayList<>();
         }
 
         @Override
-        protected String doInBackground(String... strings) {
+        protected List<String> doInBackground(String... strings) {
             SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
             String id_tk = sharedPreferences.getString("tk", "");
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("tk", id_tk);
-                jsonObject.put("network", network);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
             String res = new httpRequest().performPostCall("", jsonObject);
-            JSONObject dataa = null;
             try {
-                dataa = new JSONObject(res);
-                listLink = new ArrayList<>();
+                JSONObject dataa = new JSONObject(res);
                 JSONArray jsonArray = dataa.getJSONArray("url");
                 for (int i = 0; i < jsonArray.length(); i++) {
-                    String url = (String) jsonArray.get(i);
-                    listLink.add(url);
+                    String url = jsonArray.getString(i);
+                    listNetWork.add(url);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
 
-            return "true";
+            // Adding static data as before
+            listNetWork.add("Viettel");
+            listNetWork.add("VNPT");
+            listNetWork.add("FPT");
+            listNetWork.add("Mobifone");
+            listNetWork.add("Vietnamobile");
+            listNetWork.add("mobile");
+            listNetWork.add("mefort");
+
+            return listNetWork;
         }
 
         @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
-            if (listLink != null) {
-//                Intent serviceIntent = new Intent(XuLi.this, UrlCheckService.class);
-//                serviceIntent.putStringArrayListExtra("url_list", (ArrayList<String>) listLink);
-//                startService(serviceIntent);
-//                txt_stuss.setVisibility(View.VISIBLE);
-//                new CheckUrlsTask().execute(listLink);
+        protected void onPostExecute(List<String> listNetWork) {
+            super.onPostExecute(listNetWork);
+            Log.d("AAvbc", listNetWork.size() + "");
 
-            } else {
-                txt_stuss.setVisibility(View.VISIBLE);
-                txt_stuss.setText("Hết Link !");
-            }
+            // Creating adapter for spinner
+            ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(XuLi.this, android.R.layout.simple_spinner_item, listNetWork);
+
+            // Drop down layout style - list view with radio button
+            dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+            // attaching data adapter to spinner
+            spinner.setAdapter(dataAdapter);
+            // Set a listener to respond when an item is selected
         }
     }
+
 }
 
 //    //  xử lí check status link

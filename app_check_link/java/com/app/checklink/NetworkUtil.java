@@ -1,24 +1,13 @@
 package com.app.checklink;//package com.app.checklink;
 
-import static android.content.Context.WIFI_AWARE_SERVICE;
-import static android.content.Context.WIFI_SERVICE;
-
 import android.content.Context;
 import android.net.ConnectivityManager;
-import android.net.DhcpInfo;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
-import android.net.wifi.SupplicantState;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Build;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public class NetworkUtil {
 
@@ -48,12 +37,7 @@ public class NetworkUtil {
         return networkType;
     }
 
-    public static void updateNetworkTypeText(Context context, TextView txt) {
-        String networkType = getNetworkType(context);
-        if (txt != null) {
-            txt.setText("Network Type: " + networkType);
-        }
-    }
+
 
 //    public static String getMobileCarrierName(Context context) {
 //        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
