@@ -54,6 +54,7 @@ public class XuLi extends AppCompatActivity {
     SharedPreferences.Editor editor;
     private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1001;
     String networktype="";
+    String userID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +73,7 @@ public class XuLi extends AppCompatActivity {
         }
         mimap();
         sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
+        editor = sharedPreferences.edit();
         // check net
         key=sharedPreferences.getInt("key",0);
         if(key>0){
@@ -83,23 +85,13 @@ public class XuLi extends AppCompatActivity {
         }else {
             lin_network.setVisibility(View.VISIBLE);
         }
-
         // du lieu
-        editor = sharedPreferences.edit();
-        tk = sharedPreferences.getString("tk", "admin123");
+
+        tk = sharedPreferences.getString("username", "admin123");
         tai_khoan.setText("Tk : " + tk);
         txt_network.setText("Network : ......");
         networktype=NetworkUtil.getNetworkType(XuLi.this);
-
-
         spinner = (Spinner) findViewById(R.id.spinner);
-        // Spinner Drop down elements
-        List<String> categories = new ArrayList<String>();
-        categories.add("Viettel");
-        categories.add("VNPT");
-        categories.add("FPT");
-        categories.add("Mobifone");
-        categories.add("Vietnamobile");
         new GetNetWork(tk).execute();
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -112,7 +104,6 @@ public class XuLi extends AppCompatActivity {
                 // Do something when no item is selected
             }
         });
-
         //call du lieu
         txt_chon.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -125,8 +116,6 @@ public class XuLi extends AppCompatActivity {
                 network=network +" - "+networktype;
                 Log.d("abcdc",network);
 //                Toast.makeText(XuLi.this,""+network,Toast.LENGTH_SHORT).show();
-
-
             }
         });
         // reset
@@ -154,6 +143,8 @@ public class XuLi extends AppCompatActivity {
                         // Add your reset logic here
                         editor.putInt("key", 0);
                         editor.commit();
+                        key=0;
+//                        new UrlCheckService.checkPost(tk,network,key).execute();
                         // reset dung check
                         Intent serviceIntent = new Intent(XuLi.this, UrlCheckService.class);
                         stopService(serviceIntent);
@@ -165,7 +156,6 @@ public class XuLi extends AppCompatActivity {
 
             // Show the dialog
                 dialog.show();
-
             }
         });
 
@@ -182,15 +172,14 @@ public class XuLi extends AppCompatActivity {
                 // push key
                 editor.putInt("key", 1);
                 editor.commit();
-//               networktype=NetworkUtil.getNetworkType(XuLi.this);
-//                Log.d("abcdc",networktype);
-
             }
         });
         // txt stop
         txt_stop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                key=0;
+//                new UrlCheckService.checkPost(tk,network,key).execute();
                 Intent serviceIntent = new Intent(XuLi.this, UrlCheckService.class);
                 stopService(serviceIntent);
                 txt_stop.setVisibility(View.GONE);
@@ -199,9 +188,7 @@ public class XuLi extends AppCompatActivity {
                 txt_stuss.setVisibility(View.GONE);
                 editor.putInt("key", 0);
                 editor.commit();
-
                // Toast.makeText(XuLi.this,"Dừng check link thành công !",Toast.LENGTH_SHORT).show();
-
             }
         });
 
@@ -217,8 +204,7 @@ public class XuLi extends AppCompatActivity {
         txt_stuss = findViewById(R.id.stus_tb);
         lin_network = findViewById(R.id.network_chose);
     }
-
-    // xử lí lấy link
+    // xử lí lấy network
     class GetNetWork extends AsyncTask<String, Void, List<String>> {
         String tk;
         List<String> listNetWork;
@@ -269,10 +255,8 @@ public class XuLi extends AppCompatActivity {
 
             // Creating adapter for spinner
             ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(XuLi.this, android.R.layout.simple_spinner_item, listNetWork);
-
             // Drop down layout style - list view with radio button
             dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
             // attaching data adapter to spinner
             spinner.setAdapter(dataAdapter);
             // Set a listener to respond when an item is selected

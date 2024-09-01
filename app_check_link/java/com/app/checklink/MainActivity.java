@@ -3,6 +3,7 @@ package com.app.checklink;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -29,15 +30,16 @@ public class MainActivity extends AppCompatActivity {
                 , WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
         SharedPreferences sharedPreferences=getSharedPreferences("check-link",MODE_PRIVATE);
-        String Tk=sharedPreferences.getString("tk","");
+        String Tk=sharedPreferences.getString("username","");
+
         String password=sharedPreferences.getString("password","");
         if(!Tk.equals("")){
-            new RequestTask(Tk,password).execute("");
+            new RequestTask(Tk,password,MainActivity.this).execute("");
         }else {
            new Handler().postDelayed(new Runnable (){
                @Override
                public void run() {
-                   startActivity(new Intent(MainActivity.this,XuLi.class));
+                   startActivity(new Intent(MainActivity.this,Login.class));
                }
            },1200);
         }
@@ -48,63 +50,65 @@ public class MainActivity extends AppCompatActivity {
     public void onBackPressed() {
 //        super.onBackPressed();
     }
-    class RequestTask extends AsyncTask<String, String, String> {
-        Boolean LoginStatus = false;
-        String tk= "";
+    class RequestTask extends AsyncTask<String, String, Integer> {
+        String tk = "";
         String password = "";
+        Context context;
 
-
-        public RequestTask(String tk, String password){
+        public RequestTask(String tk, String password, Context context) {
             this.tk = tk;
-            this.password=password;
+            this.password = password;
+            this.context = context;
         }
+
         @Override
-        protected String doInBackground(String... uri) {
-            JSONObject user =  new JSONObject();
+        protected Integer doInBackground(String... strings) {
+            JSONObject user = new JSONObject();
             try {
-                user.put("tk",this.tk);
-                user.put("password",this.password);
+                user.put("username", this.tk);
+                user.put("password", this.password);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            String res = new httpRequest().performPostCall("https://nanoit.info/api/usernameSMS/login.php",user);
-            Log.d("Res: ",res);
+            String res = new httpRequest().performPostCall("https://api.techz.fun/login.php", user);
+            Log.d("Res: ", res + "  777   " + tk + " bb  " + password);
+            int status = 0;
 
-            JSONObject obj = null;
             try {
-                obj = new JSONObject(res);
-                if (obj.getString("status").equals("success")){
-                    JSONObject userDATA = obj.getJSONObject("arr_req");
-                    SharedPreferences sharedPreferences = getSharedPreferences("check-link",MODE_PRIVATE);
+                JSONObject obj = new JSONObject(res);
+                if (obj.getInt("status") == 200) {
+                    SharedPreferences sharedPreferences = context.getSharedPreferences("check-link", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("tk", userDATA.getString("tk"));
-                    editor.putString("password", userDATA.getString("password"));
-                    editor.putString("check_red", userDATA.getString("check_red"));
-                    // luu biến time delay
-                    editor.putInt("time_check", Integer.parseInt(userDATA.getString("time_check")));
-                    editor.commit();
-                    LoginStatus= true;
-                }else{
-                    LoginStatus= false;
+                    status = obj.getInt("status");
+                    int loopTime = obj.getInt("loop_time");
+                    editor.putString("userID", obj.getString("userID"));
+                    editor.putString("username", obj.getString("username"));
+                    // save loop time
+                    editor.putInt("loop_time", loopTime);
+                    editor.apply();
+                    Log.d("RequestTask", "Preferences saved: loop_time = " + sharedPreferences.getInt("loop_time", 0));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
-                LoginStatus= false;
             }
-            return "true";
+            return status;
         }
 
         @Override
-        protected void onPostExecute(String result) {
+        protected void onPostExecute(Integer result) {
             super.onPostExecute(result);
-            SharedPreferences sharedPreferences = getSharedPreferences("check-link",Context.MODE_PRIVATE);
-            int timeSession = sharedPreferences.getInt("time_check", 0);
-            Log.d("time-check",timeSession+"");
-            if (LoginStatus ==true ){
-
-                startActivity( new Intent(MainActivity.this,XuLi.class));
-                finish();
-            }else {
+            SharedPreferences sharedPreferences = context.getSharedPreferences("check-link", Context.MODE_PRIVATE);
+            int timeSession = sharedPreferences.getInt("loop_time", 0);
+            SharedPreferences.Editor editor=sharedPreferences.edit();
+            Log.d("time-check", timeSession + "   &&   " + result);
+            if (result == 200) {
+                Log.d("man_log", "login1");
+                context.startActivity(new Intent(context, XuLi.class));
+                if (context instanceof Activity) {
+                    ((Activity) context).finish();
+                }
+            } else {
+                Log.d("man_log","m2");
                 startActivity( new Intent(MainActivity.this,Login.class));
                 finish();
 

@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginHorizontal="30dp"
-        android:layout_marginVertical="50dp"
+        android:layout_marginVertical="80dp"
         android:background="@drawable/bo"
         android:gravity="center"
         android:orientation="vertical"
@@ -99,19 +99,23 @@
             android:textColor="@color/white"
             android:text="Đăng Nhập"/>
 
-        <TextView
-            android:id="@+id/login_register"
-            android:layout_width="250dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="10dp"
-            android:gravity="center"
-            android:text="Đăng kí ngay ?"
-            android:textColor="#2695ED"
-            android:textSize="16.5sp"
-            android:textStyle="bold|italic" />
-
-
     </LinearLayout>
+   <androidx.appcompat.widget.LinearLayoutCompat
+       android:layout_width="match_parent"
+       android:layout_height="match_parent"
+       android:background="#99000000"
+       android:id="@+id/lin_black"
+       android:gravity="center"
+       android:orientation="vertical"
+       >
+       <pl.droidsonroids.gif.GifImageView
+           android:layout_width="220dp"
+           android:layout_height="260dp"
+           android:background="@drawable/cat"
+           />
+
+
+   </androidx.appcompat.widget.LinearLayoutCompat>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

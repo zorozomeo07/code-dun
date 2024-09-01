@@ -42,8 +42,11 @@ public class UrlCheckService extends Service {
     private int notificationCounter = 0;
     int key=0;
     String network="";
+    String tk="";
+    int loop_time=0;
     private Thread checkUrlsThread;
     private boolean isRunning = false;
+
 
     @Override
     public void onCreate() {
@@ -61,40 +64,39 @@ public class UrlCheckService extends Service {
 //        urlsToCheck = intent.getStringArrayListExtra("url_list");
         network=intent.getStringExtra("network");
         SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
+        tk=sharedPreferences.getString("username","");
         key=sharedPreferences.getInt("key",0);
-        String tk=sharedPreferences.getString("tk","");
-        String password=sharedPreferences.getString("password","");
-        int time_check=sharedPreferences.getInt("time_check",0);
+        loop_time=sharedPreferences.getInt("loop_time",0);
         Log.d("abcdcd",network);
 
-        // add link
-        listLink = new ArrayList<>();
-        listLink.add("https://google.com");
-        listLink.add("https://app.fukaka.xyz");
-        listLink.add("https://yufaga.com/1231");
-        listLink.add("https://159.223.84.80:41674/4fa2fdbd");
-        listLink.add("http://phimmoi.net/");
-        listLink.add("https://top.112799.com/");
-        new checkPost(tk,network,key).execute("");
 
         startForeground(NOTIFICATION_ID, createNotification("Checking URLs in the background", notificationCounter));
-        if (!network.equals("")) {
-            isRunning = true; // Set the flag to indicate the service is running
-            if (time_check > 0) {
-                new CheckUrlsTask().execute(listLink);
-            } else {
-                checkUrlsThread = new Thread(() -> {
-                    while (key > 0 && isRunning) { // Check if the service is still running
-                        new CheckUrlsTask().execute(listLink);
-                        try {
-                            Thread.sleep(60000); // Check every 60 seconds
-                        } catch (InterruptedException e) {
-                            Log.e("UrlCheckService", "Thread interrupted", e);
-                        }
+        if (!network.equals("") && key>0) {
+            isRunning = true;
+//        // check post trang thái
+//            checkUrlsThread=new Thread(()->{
+//                while (isRunning==true){
+//                    new checkPost(tk,network,key).execute();
+//                    try {
+//                        Thread.sleep(3600000);
+//                    } catch (InterruptedException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                }
+//            });
+//            checkUrlsThread.start();
+            // Set the flag to indicate the service is running
+            checkUrlsThread = new Thread(() -> {
+                while (key > 0 && isRunning) { // Check if the service is still running
+                        new GetUrl(tk).execute();
+                    try {
+                        Thread.sleep(loop_time); // Check every 60 seconds
+                    } catch (InterruptedException e) {
+                        Log.e("UrlCheckService", "Thread interrupted", e);
                     }
-                });
-                checkUrlsThread.start();
-            }
+                }
+            });
+            checkUrlsThread.start();
         }
 
 
@@ -161,10 +163,8 @@ public class UrlCheckService extends Service {
         notificationManager.notify(NOTIFICATION_ID, notification);
     }
 
-    // check statuss link
+    // check statuss link trng thái của link
     class CheckUrlsTask extends AsyncTask<List<String>, Void, Map<String, Integer>> {
-
-
         @Override
         protected Map<String, Integer> doInBackground(List<String>... params) {
             List<String> urls = params[0];
@@ -200,17 +200,12 @@ public class UrlCheckService extends Service {
                         .append(" - Status Code: ").append(statusCode)
                         .append(" - ").append(statusMessage).append("\n");
             }
-
             Toast.makeText(getApplicationContext(), resultMessage.toString(), Toast.LENGTH_LONG).show();
-            Log.d("check-link", resultMessage.toString());
-            SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("check-link", MODE_PRIVATE);
-            String tk = sharedPreferences.getString("tk", "");
-
+            Log.d("check-link", resultMessage.toString() );
             for (Map.Entry<String, Integer> entry : result.entrySet()) {
-                new Update(tk, entry.getKey(), entry.getValue()).execute("");
+                new Update(tk,network, entry.getKey(), entry.getValue()).execute("");
                 break;
             }
-
             updateNotification("true");
         }
 
@@ -289,131 +284,139 @@ public class UrlCheckService extends Service {
                 return "Unknown Status";
             }
         }
-
     }
-
+    // update trang thái statuss của link vừa check
     class Update extends AsyncTask<String, String, Integer> {
         private String id;
+        private  String network;
         private String url;
+
         private Integer statusCode;
 
 
-        public Update(String id, String url, Integer statusCode) {
+        public Update(String id,String network, String url, Integer statusCode) {
             this.id = id;
+            this.network=network;
             this.url = url;
             this.statusCode = statusCode;
         }
 
         @Override
         protected Integer doInBackground(String... params) {
-            SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("check-link", MODE_PRIVATE);
-            String tk = sharedPreferences.getString("tk", "");
 
             JSONObject jsonObject = new JSONObject();
             try {
-                jsonObject.put("tk", tk);
-                jsonObject.put("url", url);
-                jsonObject.put("statusCode", statusCode);
+                jsonObject.put("username", tk);
+                jsonObject.put("network",network);
+                jsonObject.put("link", url);
+                jsonObject.put("status", statusCode);
             } catch (JSONException e) {
                 Log.e("Update", "Error creating JSON object", e);
             }
-
-            new httpRequest().performPostCall("", jsonObject);
-            return null;
+            new httpRequest().performPostCall("https://api.techz.fun/update-status-link.php", jsonObject);
+            return statusCode;
         }
 
         @Override
         protected void onPostExecute(Integer result) {
-            // Handle the result here if needed
+            if(result==200){
+                Log.d("result-check-link","true: "+ result);
+            }else {
+                Log.d("result-check-link","false: "+ result);
+            }
         }
     }
-    // get urrl
-    class GetUrl extends AsyncTask<String, String, String> {
+
+    // Push id_tk và mạng network để lấy dữ liệu link cần check
+
+    class GetUrl extends AsyncTask<String, String, Integer> {
         String tk;
-        String network;
 
-        public GetUrl(String tk, String network) {
+
+        public GetUrl(String tk){
             this.tk = tk;
-            this.network = network;
+
         }
-
-
-
         @Override
-        protected String doInBackground(String... strings) {
-            SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
-            String id_tk = sharedPreferences.getString("tk", "");
+        protected Integer doInBackground(String... strings) {
             JSONObject jsonObject = new JSONObject();
             try {
-                jsonObject.put("tk", id_tk);
-                jsonObject.put("network", network);
+                jsonObject.put("username", tk);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            String res = new httpRequest().performPostCall("", jsonObject);
+            String res = new httpRequest().performPostCall("https://api.techz.fun/getlink.php", jsonObject);
             JSONObject dataa = null;
+            int status=0;
             try {
                 dataa = new JSONObject(res);
-                listLink = new ArrayList<>();
-                JSONArray jsonArray = dataa.getJSONArray("url");
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    String url = (String) jsonArray.get(i);
-                    listLink.add(url);
+                if(dataa.getInt("status")==200){
+
+                    status=dataa.getInt("status");
+                    // list link
+                    listLink = new ArrayList<>();
+                    JSONArray jsonArray = dataa.getJSONArray("list_link");
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        String url = (String) jsonArray.get(i);
+                        listLink.add(url);
+                    }
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
-            return "true";
+            Log.d("response_url",res+"");
+            return status;
         }
-
         @Override
-        protected void onPostExecute(String s) {
+        protected void onPostExecute(Integer s) {
             super.onPostExecute(s);
-            if (listLink!= null) {
-                Log.d("AAvbcb",listLink.size()+"");
-                new CheckUrlsTask().execute(listLink);
-            } else {
-                updateNotification("Hết Link");
+            if(s==200){
+                if (listLink!= null) {
+                    Log.d("AAvbcb",listLink.size()+"");
+                    new CheckUrlsTask().execute(listLink);
+                } else {
+                    updateNotification("Hết Link");
+                }
+            }else {
+                Toast.makeText(getApplicationContext(),"Connect server error",Toast.LENGTH_SHORT).show();
             }
+
         }
     }
-    // check post
-    class checkPost extends AsyncTask<String, String, String> {
-        String tk;
-        String network;
-        int key;
-
-        public checkPost(String tk, String network,int key) {
-            this.tk = tk;
-            this.network=network;
-            this.key=key;
-        }
-
-
-
-        @Override
-        protected String doInBackground(String... strings) {
-            SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
-            String id_tk = sharedPreferences.getString("tk", "");
-            JSONObject jsonObject = new JSONObject();
-            try {
-                jsonObject.put("tk", id_tk);
-                jsonObject.put("network", network);
-                jsonObject.put("action",key);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            String res = new httpRequest().performPostCall("", jsonObject);
-            return "true";
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
-        }
-    }
-
-    // trang thai
-
+    // check post statuss
+    // nếu key = 1 -> đang hoạt đông , nếu key = 0 -> app đang k dùng
+//    static class checkPost extends AsyncTask<String, String, String> {
+//        String tk;
+//        String network;
+//        int key;
+//
+//        public checkPost(String tk, String network,int key) {
+//            this.tk = tk;
+//            this.network=network;
+//            this.key=key;
+//        }
+//
+//        @Override
+//        protected String doInBackground(String... strings) {
+//            JSONObject jsonObject = new JSONObject();
+//            try {
+//                jsonObject.put("tk", tk);
+//                jsonObject.put("network", network);
+//                jsonObject.put("action",key);
+//            } catch (JSONException e) {
+//                e.printStackTrace();
+//            }
+//           // String res = new httpRequest().performPostCall("", jsonObject);
+//            return "true";
+//        }
+//        @Override
+//        protected void onPostExecute(String s) {
+//            super.onPostExecute(s);
+//            if(key>0){
+//                Log.d("stop_check-link",s + "  &&  "+network +"   yes");
+//            }else {
+//                Log.d("stop_check-link",s + "  &&  "+network +"   no");
+//            }
+//        }
+//    }
 }

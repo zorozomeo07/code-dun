@@ -2,8 +2,10 @@ package com.app.checklink;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.LinearLayoutCompat;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,18 +20,20 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import pl.droidsonroids.gif.GifImageView;
+
 
 public class Login extends AppCompatActivity {
     TextView txt_register;
     TextView login;
     EditText inputTk,inputPassword;
+    LinearLayoutCompat lin_black;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,104 +42,105 @@ public class Login extends AppCompatActivity {
                 , WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_login);
         mapin();
-        // register
-        String a="Đăng kí ngay ?";
-        SpannableString span=new SpannableString(a);
-        // Fixing the indices based on the actual length of the string
-        span.setSpan(new RelativeSizeSpan(0.9f), 0, a.length(), 0);
-        span.setSpan(new ClickableSpan() {
-            @Override
-            public void onClick(@NonNull View widget) {
-                startActivity(new Intent(Login.this, Register.class));
-            }
-        }, 0, a.length(), 0);
+        lin_black.setVisibility(View.GONE);
 
-        txt_register.setText(span);
-        // Important: Make the TextView clickable
-        txt_register.setMovementMethod(LinkMovementMethod.getInstance());
-        // lấy thong tin tk
-
-        String tk=inputTk.getText().toString();
-        String password=inputPassword.getText().toString();
         login.setOnClickListener(new View.OnClickListener (){
             @Override
             public void onClick(View v) {
+                String tk=inputTk.getText().toString();
+                String password=inputPassword.getText().toString();
+                Log.d("check-tk-mk",tk+"  &&  "+password);
                 if(tk.equals("") || password.equals("")){
                     Toast.makeText(Login.this,"Bạn chưa nhập đầy đủ thông tin",Toast.LENGTH_SHORT).show();
                 }else {
 
-                new RequestTask(tk,password).execute("");}
-
+                new RequestTask(tk,password,Login.this).execute("");}
             }
         });
 
 
 
     }
-    class RequestTask extends AsyncTask<String, String, String> {
-        Boolean LoginStatus = false;
+    class RequestTask extends AsyncTask<String, String, Integer> {
         String tk = "";
         String password = "";
+        Context context;
 
-        public RequestTask(String tk, String password){
-            this.tk= tk;
-            this.password=password;
+        public RequestTask(String tk, String password, Context context) {
+            this.tk = tk;
+            this.password = password;
+            this.context = context;
         }
+
         @Override
-        protected String doInBackground(String... uri) {
-            JSONObject user =  new JSONObject();
+        protected Integer doInBackground(String... strings) {
+            JSONObject user = new JSONObject();
             try {
-                user.put("tk",this.tk);
-                user.put("password",this.password);
+                user.put("username", this.tk);
+                user.put("password", this.password);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            String res = new httpRequest().performPostCall("https://nanoit.info/api/usernameSMS/login.php",user);
-            Log.d("Res: ",res);
+            String res = new httpRequest().performPostCall("https://api.techz.fun/login.php", user);
+            Log.d("Res: ", res + "  777   " + tk + " bb  " + password);
+            int status = 0;
 
-            JSONObject obj = null;
             try {
-                obj = new JSONObject(res);
-                if (obj.getString("status").equals("success")){
-                    JSONObject userDATA = obj.getJSONObject("arr_req");
-                    SharedPreferences sharedPreferences = getSharedPreferences("check-link",MODE_PRIVATE);
+                JSONObject obj = new JSONObject(res);
+                if (obj.getInt("status") == 200) {
+                    SharedPreferences sharedPreferences = context.getSharedPreferences("check-link", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("tk", userDATA.getString("tk"));
-                    editor.putString("password", userDATA.getString("password"));
-                    editor.putString("check_red", userDATA.getString("check_red"));
-                    // luu biến time delay
-                    editor.putInt("time_check", Integer.parseInt(userDATA.getString("time_check")));
-                    editor.commit();
-                    LoginStatus= true;
-                }else{
-                    LoginStatus= false;
+                    status = obj.getInt("status");
+                    int loopTime = obj.getInt("loop_time");
+                    editor.putString("userID", obj.getString("userID"));
+                    editor.putString("username", obj.getString("username"));
+                    // save loop time
+                    editor.putInt("loop_time", loopTime);
+                    editor.apply();
+                    Log.d("RequestTask", "Preferences saved: loop_time = " + sharedPreferences.getInt("loop_time", 0));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
-                LoginStatus= false;
             }
-            return "true";
+            return status;
         }
 
         @Override
-        protected void onPostExecute(String result) {
+        protected void onPostExecute(Integer result) {
             super.onPostExecute(result);
-            if (LoginStatus ==true ){
+            SharedPreferences sharedPreferences = context.getSharedPreferences("check-link", Context.MODE_PRIVATE);
+            int timeSession = sharedPreferences.getInt("loop_time", 0);
+            SharedPreferences.Editor editor=sharedPreferences.edit();
+            Log.d("time-check", timeSession + "   &&   " + result);
+            lin_black.setVisibility(View.VISIBLE);
+            new Handler().postDelayed(new Runnable (){
+                @Override
+                public void run() {
+                    if (result == 200) {
+                        Log.d("man_log", "login1");
+                        editor.putString("username",tk);
+                        editor.putString("password",password);
+                        editor.apply();
 
-                startActivity( new Intent(Login.this,XuLi.class));
-                finish();
-            }else {
-                Toast.makeText(Login.this,"Bạn nhập sai thông tin tài khoản",Toast.LENGTH_SHORT).show();
-
-            }
+                        context.startActivity(new Intent(context, XuLi.class));
+                        if (context instanceof Activity) {
+                            ((Activity) context).finish();
+                        }
+                    } else {
+                        lin_black.setVisibility(View.GONE);
+                        Toast.makeText(context, "Bạn nhập sai thông tin tài khoản", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            },1000);
         }
     }
 
 
 
+
     void mapin(){
 
-        txt_register=findViewById(R.id.login_register);
+        lin_black=findViewById(R.id.lin_black);
         login=findViewById(R.id.login);
         inputPassword=findViewById(R.id.input_password);
         inputTk=findViewById(R.id.input_tk);
