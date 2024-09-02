@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -43,9 +44,10 @@ public class XuLi extends AppCompatActivity {
     TextView txt_chon, txt_check_link, txt_stop;
     ImageView reset;
     TextView txt_stuss;
+    ImageView go_out;
     String tk;
     String network = "";
-    int time_check = 0;
+
     int key = 0;
     Spinner spinner;
     LinearLayout lin_network;
@@ -76,15 +78,6 @@ public class XuLi extends AppCompatActivity {
         editor = sharedPreferences.edit();
         // check net
         key=sharedPreferences.getInt("key",0);
-        if(key>0){
-            txt_check_link.setVisibility(View.GONE);
-            txt_stop.setVisibility(View.VISIBLE);
-            txt_stuss.setVisibility(View.VISIBLE);
-            lin_network.setVisibility(View.GONE);
-            txt_chon.setVisibility(View.GONE);
-        }else {
-            lin_network.setVisibility(View.VISIBLE);
-        }
         // du lieu
 
         tk = sharedPreferences.getString("username", "admin123");
@@ -108,16 +101,18 @@ public class XuLi extends AppCompatActivity {
         txt_chon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(XuLi.this, "Bạn đã chọn nhà mạng " + network + " !", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(XuLi.this, "Bạn đã chọn nhà mạng " + network + " !", Toast.LENGTH_SHORT).show();
+                editor.putString("network",network);
+                editor.commit();
                 txt_network.setText("Network : " + network);
-                lin_network.setVisibility(View.GONE);
-                txt_chon.setVisibility(View.GONE);
-                txt_check_link.setVisibility(View.VISIBLE);
                 network=network +" - "+networktype;
                 Log.d("abcdc",network);
+                new UpdateNetwork(tk,network).execute();
 //                Toast.makeText(XuLi.this,""+network,Toast.LENGTH_SHORT).show();
+
             }
         });
+
         // reset
         reset.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -126,7 +121,7 @@ public class XuLi extends AppCompatActivity {
                 AlertDialog.Builder dialog = new AlertDialog.Builder(XuLi.this);
                 dialog.setMessage("Bạn chắc chắn muốn reset lại ?");
 
-// Set the Negative Button (Cancel button)
+               // Set the Negative Button (Cancel button)
                 dialog.setNegativeButton("Không", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int which) {
@@ -143,7 +138,6 @@ public class XuLi extends AppCompatActivity {
                         // Add your reset logic here
                         editor.putInt("key", 0);
                         editor.commit();
-                        key=0;
 //                        new UrlCheckService.checkPost(tk,network,key).execute();
                         // reset dung check
                         Intent serviceIntent = new Intent(XuLi.this, UrlCheckService.class);
@@ -163,6 +157,7 @@ public class XuLi extends AppCompatActivity {
         txt_check_link.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                key=1;
                 txt_check_link.setVisibility(View.GONE);
                 txt_stop.setVisibility(View.VISIBLE);
                 Intent serviceIntent = new Intent(XuLi.this, UrlCheckService.class);
@@ -188,13 +183,72 @@ public class XuLi extends AppCompatActivity {
                 txt_stuss.setVisibility(View.GONE);
                 editor.putInt("key", 0);
                 editor.commit();
+                txt_network.setText("Network :..... " );
                // Toast.makeText(XuLi.this,"Dừng check link thành công !",Toast.LENGTH_SHORT).show();
             }
         });
+        go_out.setOnClickListener(new View.OnClickListener (){
+            @Override
+            public void onClick(View v) {
+                key=sharedPreferences.getInt("key",0);
+                if(key>0){
+                    Toast.makeText(XuLi.this,"Bạn cần dừng check link trước khi đăng xuất TK !",Toast.LENGTH_SHORT).show();
+                }else {
+                    out();
+                }
+
+            }
+        });
+        if(key>0){
+            txt_check_link.setVisibility(View.GONE);
+            txt_stop.setVisibility(View.VISIBLE);
+            txt_stuss.setVisibility(View.VISIBLE);
+            lin_network.setVisibility(View.GONE);
+            txt_chon.setVisibility(View.GONE);
+            txt_network.setVisibility(View.VISIBLE);
+            network=sharedPreferences.getString("network","");
+            txt_network.setText("Network : " + network);
+        }else {
+            lin_network.setVisibility(View.VISIBLE);
+            txt_network.setText("Network :..... " );
+        }
 
     }
 
+    @SuppressLint("MissingSuperCall")
+    @Override
+    public void onBackPressed() {
+        finishAffinity();
+    }
+    void out(){
+        AlertDialog.Builder alerdialog=new AlertDialog.Builder(XuLi.this);
+        alerdialog.setTitle("Bạn có chắc chắn muốn đăng xuất tài khoản ?");
+        alerdialog.setPositiveButton("Đồng ý",new DialogInterface.OnClickListener (){
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // xoá tk , mk đã lưu
+                editor.clear();
+                editor.commit();
+                // dừng sevice lại
+                Intent serviceIntent = new Intent(XuLi.this, UrlCheckService.class);
+                stopService(serviceIntent);
+                // chuyển về trang login đăng nhập lại
+                startActivity(new Intent(XuLi.this,Login.class));
+                Toast.makeText(XuLi.this,"Đăng xuất tài khoản thành công !",Toast.LENGTH_SHORT).show();
+            }
+        });
+        alerdialog.setNegativeButton("Huỷ",new DialogInterface.OnClickListener (){
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        alerdialog.show();
+    }
+
+
     void mimap() {
+        go_out=findViewById(R.id.go_out);
         tai_khoan = findViewById(R.id.tk);
         txt_network = findViewById(R.id.txt_network);
         txt_chon = findViewById(R.id.chose);
@@ -203,6 +257,55 @@ public class XuLi extends AppCompatActivity {
         reset = findViewById(R.id.reset);
         txt_stuss = findViewById(R.id.stus_tb);
         lin_network = findViewById(R.id.network_chose);
+        go_out=findViewById(R.id.go_out);
+    }
+    // push network
+    class UpdateNetwork extends  AsyncTask<String,String,Integer>{
+        String tka;
+        String networka;
+       public UpdateNetwork(String tk,String network){
+           this.tka=tk;
+           this.networka=network;
+       }
+        @Override
+        protected Integer doInBackground(String... strings) {
+           JSONObject jsonObject=new JSONObject();
+            try {
+                jsonObject.put("username",tka);
+                jsonObject.put("network",networka);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            String res=new httpRequest().performPostCall("https://api.techz.fun/update-network.php",jsonObject);
+            int status=0;
+
+            JSONObject data=null;
+            try {
+
+                data=new JSONObject(res);
+                status=data.getInt("status");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            Log.d("response_network",res+"");
+            return status;
+        }
+
+        @Override
+        protected void onPostExecute(Integer result) {
+            super.onPostExecute(result);
+            Log.d("result-check-link",result+"");
+            if(result==200){
+                Toast.makeText(XuLi.this, "Bạn đã chọn nhà mạng thành công !", Toast.LENGTH_SHORT).show();
+                lin_network.setVisibility(View.GONE);
+                txt_chon.setVisibility(View.GONE);
+                txt_check_link.setVisibility(View.VISIBLE);
+                Log.d("result-check-link","true network: "+ result +" aaa  "+tka +"   "+networka);
+            }else {
+                Toast.makeText(XuLi.this,"Update thất bại , vui lòng chọn lại nhà mạng !",Toast.LENGTH_SHORT).show();
+                Log.d("result-check-link","false network: "+ result+" aaa  "+tka +"   "+networka);
+            }
+        }
     }
     // xử lí lấy network
     class GetNetWork extends AsyncTask<String, Void, List<String>> {
@@ -216,18 +319,16 @@ public class XuLi extends AppCompatActivity {
 
         @Override
         protected List<String> doInBackground(String... strings) {
-            SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
-            String id_tk = sharedPreferences.getString("tk", "");
             JSONObject jsonObject = new JSONObject();
             try {
-                jsonObject.put("tk", id_tk);
+                jsonObject.put("username", tk);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            String res = new httpRequest().performPostCall("", jsonObject);
+            String res = new httpRequest().performPostCall("https://api.techz.fun/get-list-network.php", jsonObject);
             try {
                 JSONObject dataa = new JSONObject(res);
-                JSONArray jsonArray = dataa.getJSONArray("url");
+                JSONArray jsonArray = dataa.getJSONArray("list_network");
                 for (int i = 0; i < jsonArray.length(); i++) {
                     String url = jsonArray.getString(i);
                     listNetWork.add(url);
@@ -235,16 +336,6 @@ public class XuLi extends AppCompatActivity {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
-            // Adding static data as before
-            listNetWork.add("Viettel");
-            listNetWork.add("VNPT");
-            listNetWork.add("FPT");
-            listNetWork.add("Mobifone");
-            listNetWork.add("Vietnamobile");
-            listNetWork.add("mobile");
-            listNetWork.add("mefort");
-
             return listNetWork;
         }
 
@@ -262,7 +353,6 @@ public class XuLi extends AppCompatActivity {
             // Set a listener to respond when an item is selected
         }
     }
-
 }
 
 //    //  xử lí check status link

@@ -22,35 +22,36 @@
         app:layout_constraintVertical_bias="0.494">
 
         <ImageView
-            android:layout_width="150dp"
-            android:layout_height="150dp"
+            android:layout_width="240dp"
+            android:layout_height="160dp"
             android:layout_gravity="center"
-            android:background="@drawable/click" />
+            android:background="@drawable/icons" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="25dp"
+            android:fontFamily="@font/akaya_telivigala"
             android:gravity="center"
             android:text="Đăng Nhập"
             android:textColor="@color/black"
-            android:textSize="27dp"
+            android:textSize="32dp"
             android:textStyle="bold|italic" />
 
         <TextView
             android:layout_width="250dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:fontFamily="@font/amita"
             android:text="Tên đăng nhập"
             android:textColor="@color/black"
-            android:textSize="17sp" />
+            android:textSize="16sp" />
 
         <EditText
             android:id="@+id/input_tk"
             android:layout_width="250dp"
             android:layout_height="40dp"
-            android:layout_marginTop="8dp"
+
             android:background="@drawable/input"
             android:drawableLeft="@drawable/baseline_person_24"
             android:drawablePadding="8dp"
@@ -67,14 +68,14 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
             android:text="Mật khẩu"
+            android:fontFamily="@font/amita"
             android:textColor="@color/black"
-            android:textSize="17sp" />
+            android:textSize="16sp" />
 
         <EditText
             android:id="@+id/input_password"
             android:layout_width="250dp"
             android:layout_height="40dp"
-            android:layout_marginTop="8dp"
             android:background="@drawable/input"
             android:drawableLeft="@drawable/baseline_password_24"
             android:drawablePadding="8dp"
@@ -93,11 +94,12 @@
             android:layout_height="40dp"
             android:layout_marginTop="20dp"
             android:background="@drawable/b2"
+            android:fontFamily="@font/artifika"
             android:gravity="center"
-            android:textSize="19sp"
-            android:textStyle="italic|bold"
+            android:text="Đăng Nhập"
             android:textColor="@color/white"
-            android:text="Đăng Nhập"/>
+            android:textSize="19sp"
+            android:textStyle="italic|bold" />
 
     </LinearLayout>
    <androidx.appcompat.widget.LinearLayoutCompat
@@ -106,6 +108,7 @@
        android:background="#99000000"
        android:id="@+id/lin_black"
        android:gravity="center"
+       android:visibility="gone"
        android:orientation="vertical"
        >
        <pl.droidsonroids.gif.GifImageView

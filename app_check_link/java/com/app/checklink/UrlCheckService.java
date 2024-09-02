@@ -51,17 +51,15 @@ public class UrlCheckService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-//        urlsToCheck = new ArrayList<>();
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         createNotificationChannel();
         // Initialize the counter from SharedPreferences
-        SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
-        notificationCounter = sharedPreferences.getInt("notification_count", 0);
+//        SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
+//        notificationCounter = sharedPreferences.getInt("notification_count", 0);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-//        urlsToCheck = intent.getStringArrayListExtra("url_list");
         network=intent.getStringExtra("network");
         SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
         tk=sharedPreferences.getString("username","");
@@ -70,7 +68,7 @@ public class UrlCheckService extends Service {
         Log.d("abcdcd",network);
 
 
-        startForeground(NOTIFICATION_ID, createNotification("Checking URLs in the background", notificationCounter));
+        startForeground(NOTIFICATION_ID, createNotification("Checking URLs is Starting"));
         if (!network.equals("") && key>0) {
             isRunning = true;
 //        // check post trang thái
@@ -131,7 +129,7 @@ public class UrlCheckService extends Service {
         }
     }
 
-    private Notification createNotification(String contentText, int count) {
+    private Notification createNotification(String contentText) {
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this,
                 0,
@@ -140,29 +138,19 @@ public class UrlCheckService extends Service {
         );
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.click) // Replace with your own icon
+                .setSmallIcon(R.drawable.icons) // Replace with your own icon
                 .setContentTitle("URL Checking Service")
-                .setContentText(contentText + " (" + count + " notifications sent)")
+                .setContentText("Start Running : "+contentText)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .build();
     }
     private void updateNotification(String contentText) {
-        // Increment the counter
-        notificationCounter++;
-
-        // Update SharedPreferences
-        SharedPreferences sharedPreferences = getSharedPreferences("check-link", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt("notification_count", notificationCounter);
-        editor.apply();
-
         // Update the notification with the new counter value
-        Notification notification = createNotification(contentText, notificationCounter);
+        Notification notification = createNotification(contentText);
         notificationManager.notify(NOTIFICATION_ID, notification);
     }
-
     // check statuss link trng thái của link
     class CheckUrlsTask extends AsyncTask<List<String>, Void, Map<String, Integer>> {
         @Override
@@ -188,7 +176,6 @@ public class UrlCheckService extends Service {
             }
             return urlStatusMap;
         }
-
         @Override
         protected void onPostExecute(Map<String, Integer> result) {
             StringBuilder resultMessage = new StringBuilder();
@@ -200,13 +187,12 @@ public class UrlCheckService extends Service {
                         .append(" - Status Code: ").append(statusCode)
                         .append(" - ").append(statusMessage).append("\n");
             }
-            Toast.makeText(getApplicationContext(), resultMessage.toString(), Toast.LENGTH_LONG).show();
+//            Toast.makeText(getApplicationContext(), resultMessage.toString(), Toast.LENGTH_LONG).show();
             Log.d("check-link", resultMessage.toString() );
             for (Map.Entry<String, Integer> entry : result.entrySet()) {
                 new Update(tk,network, entry.getKey(), entry.getValue()).execute("");
-                break;
             }
-            updateNotification("true");
+//            updateNotification("true");
         }
 
         private String getStatusMessage(int statusCode) {
@@ -326,9 +312,7 @@ public class UrlCheckService extends Service {
             }
         }
     }
-
     // Push id_tk và mạng network để lấy dữ liệu link cần check
-
     class GetUrl extends AsyncTask<String, String, Integer> {
         String tk;
 
@@ -350,7 +334,7 @@ public class UrlCheckService extends Service {
             int status=0;
             try {
                 dataa = new JSONObject(res);
-                if(dataa.getInt("status")==200){
+                if(dataa.getInt("status")!=0){
 
                     status=dataa.getInt("status");
                     // list link
